@@ -46,6 +46,7 @@ export function BlueprintCanvas({
   const partsGroupRef = useRef<THREE.Group | null>(null);
   const dimsGroupRef = useRef<THREE.Group | null>(null);
   const meshMapRef = useRef<Map<string, Part3D>>(new Map());
+  const pointerDownPosRef = useRef<{ x: number; y: number } | null>(null);
 
   const [projectedLabels, setProjectedLabels] = useState<ProjectedLabel[]>([]);
 
@@ -82,17 +83,17 @@ export function BlueprintCanvas({
         y: screenY,
         visible:
           !isBehind &&
-          screenX >= 20 &&
-          screenX <= width - 20 &&
-          screenY >= 20 &&
-          screenY <= height - 20,
+          screenX >= 16 &&
+          screenX <= width - 16 &&
+          screenY >= 16 &&
+          screenY <= height - 16,
       };
     });
 
     setProjectedLabels(nextLabels);
   }, [blueprint.dimensions, showDimensions]);
 
-  // 1. Initialize Three.js WebGL Scene, Camera, Lights & Controls
+  // 1. Initialize Three.js WebGL Scene, Camera, Lights, Touch Controls & ResizeObserver
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -128,6 +129,10 @@ export function BlueprintCanvas({
     controls.maxPolarAngle = Math.PI / 2 + 0.08;
     controls.minDistance = 0.6;
     controls.maxDistance = 60;
+    controls.touches = {
+      ONE: THREE.TOUCH.ROTATE,
+      TWO: THREE.TOUCH.DOLLY_PAN,
+    };
     controlsRef.current = controls;
 
     // Studio & Technical CAD Lighting
@@ -173,16 +178,23 @@ export function BlueprintCanvas({
       if (!containerRef.current || !rendererRef.current || !cameraRef.current) return;
       const w = containerRef.current.clientWidth;
       const h = containerRef.current.clientHeight;
+      if (w === 0 || h === 0) return;
       cameraRef.current.aspect = w / Math.max(1, h);
       cameraRef.current.updateProjectionMatrix();
       rendererRef.current.setSize(w, h);
       updateProjectedDimensionLabels();
     };
+
+    const resizeObserver = new ResizeObserver(() => {
+      handleResize();
+    });
+    resizeObserver.observe(container);
     window.addEventListener('resize', handleResize);
 
     return () => {
       cancelAnimationFrame(animFrameId);
       controls.removeEventListener('change', handleControlChange);
+      resizeObserver.disconnect();
       window.removeEventListener('resize', handleResize);
       controls.dispose();
       renderer.dispose();
@@ -195,7 +207,6 @@ export function BlueprintCanvas({
     const dimsGroup = dimsGroupRef.current;
     if (!partsGroup || !dimsGroup) return;
 
-    // Clear previous meshes
     partsGroup.clear();
     dimsGroup.clear();
     meshMapRef.current.clear();
@@ -231,14 +242,13 @@ export function BlueprintCanvas({
       const mesh = new THREE.Mesh(geometry, material);
       mesh.userData = { partId: part.id };
 
-      // Base position + optional open transform + optional explosion offset
       let px = part.positionM[0];
       let py = part.positionM[1];
       let pz = part.positionM[2];
 
-      let rx = part.rotationRad[0];
+      const rx = part.rotationRad[0];
       let ry = part.rotationRad[1];
-      let rz = part.rotationRad[2];
+      const rz = part.rotationRad[2];
 
       if (openFronts && part.openTransform) {
         if (part.openTransform.translateM) {
@@ -270,7 +280,6 @@ export function BlueprintCanvas({
       mesh.position.set(px, py, pz);
       mesh.rotation.set(rx, ry, rz);
 
-      // Technical CAD Edge Outline
       const edgesGeo = new THREE.EdgesGeometry(geometry);
       const edgeMat = new THREE.LineBasicMaterial({
         color: isSelected ? '#7dd3fc' : xrayMode ? '#60a5fa' : '#0f172a',
@@ -284,7 +293,6 @@ export function BlueprintCanvas({
       meshMapRef.current.set(part.id, part);
     }
 
-    // Build 3D Dimension Lines & End Ticks
     if (showDimensions) {
       for (const dim of blueprint.dimensions) {
         const startVec = new THREE.Vector3(...dim.startM);
@@ -298,7 +306,6 @@ export function BlueprintCanvas({
         const lineObj = new THREE.Line(lineGeo, lineMat);
         dimsGroup.add(lineObj);
 
-        // Endpoint spheres/markers
         const markerGeo = new THREE.SphereGeometry(0.025, 10, 10);
         const markerMat = new THREE.MeshBasicMaterial({ color: dim.colorHex });
 
@@ -358,8 +365,23 @@ export function BlueprintCanvas({
     updateProjectedDimensionLabels,
   ]);
 
-  // 4. Handle Click Raycasting to Inspect Individual 3D Parts
-  const handleCanvasClick = (event: React.MouseEvent<HTMLDivElement>) => {
+  // 4. Touch-safe & Drag-safe Pointer Tap Detection for Inspecting 3D Parts
+  const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    pointerDownPosRef.current = { x: event.clientX, y: event.clientY };
+  };
+
+  const handlePointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
+    const downPos = pointerDownPosRef.current;
+    pointerDownPosRef.current = null;
+    if (!downPos) return;
+
+    const moveDist = Math.hypot(
+      event.clientX - downPos.x,
+      event.clientY - downPos.y
+    );
+    // Ignore orbit/pan gestures (only select part on clean tap/click < 6px)
+    if (moveDist > 6) return;
+
     const container = containerRef.current;
     const camera = cameraRef.current;
     const partsGroup = partsGroupRef.current;
@@ -389,11 +411,12 @@ export function BlueprintCanvas({
 
   return (
     <div className="relative w-full h-full select-none overflow-hidden bg-slate-950">
-      {/* WebGL Canvas Mount */}
+      {/* WebGL Canvas Mount with touch-none for smooth 1-finger orbit & 2-finger pinch zoom */}
       <div
         ref={containerRef}
-        onClick={handleCanvasClick}
-        className="w-full h-full cursor-grab active:cursor-grabbing"
+        onPointerDown={handlePointerDown}
+        onPointerUp={handlePointerUp}
+        className="w-full h-full touch-none cursor-grab active:cursor-grabbing"
       />
 
       {/* Floating 3D Projected Dimension Callouts (Cotas) */}
@@ -409,12 +432,12 @@ export function BlueprintCanvas({
                     borderColor: lbl.colorHex,
                   }}
                   className="
-                    absolute left-0 top-0 px-2 py-0.5 rounded-md
-                    bg-slate-900/90 backdrop-blur-sm border text-[11px]
+                    absolute left-0 top-0 px-1.5 sm:px-2 py-0.5 rounded-md
+                    bg-slate-900/90 backdrop-blur-sm border text-[10px] sm:text-[11px]
                     font-mono font-semibold text-slate-100 shadow-lg whitespace-nowrap
                   "
                 >
-                  <span className="text-slate-400 mr-1.5 font-sans font-normal">
+                  <span className="text-slate-400 mr-1 font-sans font-normal hidden sm:inline">
                     {lbl.label}:
                   </span>
                   <span style={{ color: lbl.colorHex }}>{lbl.valueFormatted}</span>

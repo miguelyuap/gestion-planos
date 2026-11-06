@@ -13,6 +13,7 @@ import {
   Layers,
   Maximize2,
   Ruler,
+  SlidersHorizontal,
   Sparkles,
   Table2,
   Utensils,
@@ -20,7 +21,7 @@ import {
 import {
   CATEGORY_METADATA,
   DEFAULT_PARAMS_BY_CATEGORY,
-   DEFAULT_ROOF_PARAMS,
+  DEFAULT_ROOF_PARAMS,
   generateBlueprint,
 } from '../blueprint-engine';
 import { parseRequirementIntent } from '../blueprint-engine/intent-parser';
@@ -54,6 +55,9 @@ export function BlueprintStudio() {
     'Techo (2 aguas) de 6m × 5m con altura de 2.6m.'
   );
 
+  // Mobile/Tablet Responsive Panel State ('3d' | 'controls')
+  const [mobilePanelOpen, setMobilePanelOpen] = useState<boolean>(false);
+
   // 3D Viewport States
   const [cameraView, setCameraView] = useState<CameraViewPreset>('perspective');
   const [xrayMode, setXrayMode] = useState<boolean>(false);
@@ -74,6 +78,7 @@ export function BlueprintStudio() {
     setInterpretationMessage(parsed.interpretationSummary);
     setSelectedPart(null);
     setExplosionFactor(0);
+    setMobilePanelOpen(false);
   };
 
   const handleSelectCategory = (category: StructureCategory) => {
@@ -92,59 +97,75 @@ export function BlueprintStudio() {
     params.category === 'door';
 
   return (
-    <div className="flex flex-col h-screen w-screen overflow-hidden bg-slate-950 text-slate-100">
+    <div className="flex flex-col h-[100dvh] w-screen overflow-hidden bg-slate-950 text-slate-100">
       {/* Top Header & Natural Language Requirement Bar */}
-      <header className="border-b border-slate-800 bg-slate-900/90 backdrop-blur px-4 py-3 z-20">
-        <div className="max-w-[1800px] mx-auto flex flex-col lg:flex-row lg:items-center gap-3">
-          {/* Brand Title */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5 pr-4">
-              <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center shadow-lg shadow-sky-500/20">
-                <Compass className="w-5 h-5 text-slate-950" />
+      <header className="border-b border-slate-800 bg-slate-900/95 backdrop-blur px-3 sm:px-4 py-2.5 sm:py-3 z-20 shrink-0">
+        <div className="max-w-[1800px] mx-auto flex flex-col lg:flex-row lg:items-center gap-2.5 sm:gap-3">
+          {/* Brand Title + Mobile Action Buttons */}
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 sm:gap-2.5">
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center shadow-lg shadow-sky-500/20 shrink-0">
+                <Compass className="w-4 h-4 sm:w-5 sm:h-5 text-slate-950" />
               </div>
               <div>
-                <div className="flex items-center gap-2">
-                  <h1 className="text-sm font-bold tracking-tight text-white">
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <h1 className="text-xs sm:text-sm font-bold tracking-tight text-white">
                     GST-PLANOS 3D
                   </h1>
-                  <span className="px-1.5 py-0.5 text-[10px] font-mono uppercase rounded bg-sky-500/20 text-sky-300 border border-sky-500/30">
-                    CAD Paramétrico
+                  <span className="px-1.5 py-0.5 text-[9px] sm:text-[10px] font-mono uppercase rounded bg-sky-500/20 text-sky-300 border border-sky-500/30">
+                    CAD
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-400">
+                <p className="text-[10px] sm:text-[11px] text-slate-400 hidden sm:block">
                   Generador de Planos 3D por Requerimiento y Medidas
                 </p>
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={() => setCutListModalOpen(true)}
-              className="
-                lg:hidden inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg
-                bg-emerald-500/20 border border-emerald-500/40 text-emerald-300
-                text-xs font-semibold
-              "
-            >
-              <FileSpreadsheet className="w-3.5 h-3.5" />
-              Despiece
-            </button>
+            {/* Mobile & Tablet Quick Controls */}
+            <div className="flex lg:hidden items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setMobilePanelOpen((prev) => !prev)}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition ${
+                  mobilePanelOpen
+                    ? 'bg-sky-500 text-slate-950 border-sky-400'
+                    : 'bg-slate-800/90 border-slate-700 text-sky-300'
+                }`}
+              >
+                <SlidersHorizontal className="w-3.5 h-3.5" />
+                {mobilePanelOpen ? 'Ver Plano 3D' : 'Medidas'}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setCutListModalOpen(true)}
+                className="
+                  inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg
+                  bg-emerald-500/20 border border-emerald-500/40 text-emerald-300
+                  text-xs font-semibold
+                "
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5" />
+                <span className="hidden xs:inline">Despiece</span>
+              </button>
+            </div>
           </div>
 
           {/* Natural Language Input Form */}
           <form
             onSubmit={handleGenerateFromPrompt}
-            className="flex-1 flex flex-col sm:flex-row items-stretch sm:items-center gap-2"
+            className="flex-1 flex flex-row items-center gap-1.5 sm:gap-2"
           >
             <div className="relative flex-1">
-              <Sparkles className="w-4 h-4 text-sky-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-sky-400 absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={promptText}
                 onChange={(e) => setPromptText(e.target.value)}
-                placeholder='Ej: "Voy a hacer un techo de 6x5m", "Quiero un closet de 200x220x60 cm", "Mesa de 180x90 cm"...'
+                placeholder='Ej: "Voy a hacer un techo de 6x5m", "Closet de 200x220x60 cm"...'
                 className="
-                  w-full pl-9 pr-3 py-2 text-xs sm:text-sm rounded-lg
+                  w-full pl-8 sm:pl-9 pr-2.5 py-1.5 sm:py-2 text-xs sm:text-sm rounded-lg
                   bg-slate-950 border border-slate-700 text-slate-100
                   placeholder:text-slate-500 focus:outline-none focus:border-sky-400
                 "
@@ -153,13 +174,13 @@ export function BlueprintStudio() {
             <button
               type="submit"
               className="
-                px-4 py-2 rounded-lg bg-sky-500 hover:bg-sky-400
-                text-slate-950 font-semibold text-xs sm:text-sm
+                px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg bg-sky-500 hover:bg-sky-400
+                text-slate-950 font-semibold text-xs sm:text-sm shrink-0
                 inline-flex items-center justify-center gap-1.5 transition shadow-md shadow-sky-500/10
               "
             >
-              <Sparkles className="w-4 h-4" />
-              Generar Plano 3D
+              <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span>Generar 3D</span>
             </button>
           </form>
 
@@ -182,17 +203,24 @@ export function BlueprintStudio() {
       </header>
 
       {/* Main Workspace: Sidebar + 3D CAD Viewport */}
-      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
-        {/* Left Control Panel */}
-        <aside className="w-full lg:w-96 border-b lg:border-b-0 lg:border-r border-slate-800 bg-slate-900/70 flex flex-col overflow-y-auto max-h-[44vh] lg:max-h-none">
+      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
+        {/* Left Control Panel (Collapsible Drawer on Mobile/Tablet, Fixed Sidebar on Desktop) */}
+        <aside
+          className={`
+            ${mobilePanelOpen ? 'flex' : 'hidden'} lg:flex
+            w-full lg:w-96 border-b lg:border-b-0 lg:border-r border-slate-800
+            bg-slate-900/95 lg:bg-slate-900/70 flex-col overflow-y-auto
+            max-h-[58dvh] lg:max-h-none z-20 shrink-0
+          `}
+        >
           {/* 1. Structure Category Selector */}
-          <div className="p-4 border-b border-slate-800">
-            <div className="flex items-center justify-between mb-2.5">
+          <div className="p-3.5 sm:p-4 border-b border-slate-800">
+            <div className="flex items-center justify-between mb-2">
               <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
                 1. Tipo de Estructura
               </span>
               <span className="text-[11px] text-sky-400 font-medium">
-                6 categorías activas
+                6 categorías
               </span>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 gap-1.5">
@@ -223,14 +251,14 @@ export function BlueprintStudio() {
             </div>
 
             {/* Interpretation feedback */}
-            <div className="mt-3 px-3 py-2 rounded-lg bg-slate-950/90 border border-slate-800 text-[11px] text-slate-300 flex items-start gap-2">
+            <div className="mt-2.5 px-3 py-2 rounded-lg bg-slate-950/90 border border-slate-800 text-[11px] text-slate-300 flex items-start gap-2">
               <Ruler className="w-3.5 h-3.5 text-sky-400 shrink-0 mt-0.5" />
               <span>{interpretationMessage}</span>
             </div>
           </div>
 
           {/* 2. Real-time Parametric Dimensions */}
-          <div className="p-4 flex-1 space-y-3">
+          <div className="p-3.5 sm:p-4 flex-1 space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
                 2. Medidas y Parámetros ({blueprint.unitSystem})
@@ -251,11 +279,11 @@ export function BlueprintStudio() {
         </aside>
 
         {/* Center/Right 3D Viewport Area */}
-        <main className="flex-1 flex flex-col relative overflow-hidden bg-slate-950">
-          {/* Viewport Floating Top Toolbar */}
-          <div className="absolute top-3 left-3 right-3 z-10 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+        <main className="flex-1 flex flex-col relative overflow-hidden bg-slate-950 min-h-[260px]">
+          {/* Viewport Floating Top Toolbar (Scrollable horizontally on small screens) */}
+          <div className="absolute top-2.5 left-2.5 right-2.5 z-10 flex flex-wrap items-center justify-between gap-1.5 pointer-events-none">
             {/* Camera View Presets */}
-            <div className="pointer-events-auto flex items-center gap-1 p-1 rounded-lg bg-slate-900/90 backdrop-blur border border-slate-800 shadow-lg">
+            <div className="pointer-events-auto flex items-center gap-1 p-1 rounded-lg bg-slate-900/90 backdrop-blur border border-slate-800 shadow-lg max-w-full overflow-x-auto">
               {(
                 [
                   ['perspective', '3D Iso'],
@@ -268,7 +296,7 @@ export function BlueprintStudio() {
                   key={viewKey}
                   type="button"
                   onClick={() => setCameraView(viewKey)}
-                  className={`px-2.5 py-1 rounded-md text-xs font-medium transition ${
+                  className={`px-2 sm:px-2.5 py-1 rounded-md text-[11px] sm:text-xs font-medium whitespace-nowrap transition ${
                     cameraView === viewKey
                       ? 'bg-sky-500 text-slate-950 font-semibold'
                       : 'text-slate-300 hover:bg-slate-800'
@@ -280,51 +308,51 @@ export function BlueprintStudio() {
             </div>
 
             {/* Interactive CAD Inspection Controls */}
-            <div className="pointer-events-auto flex flex-wrap items-center gap-1.5 p-1 rounded-lg bg-slate-900/90 backdrop-blur border border-slate-800 shadow-lg">
+            <div className="pointer-events-auto flex items-center gap-1 sm:gap-1.5 p-1 rounded-lg bg-slate-900/90 backdrop-blur border border-slate-800 shadow-lg max-w-full overflow-x-auto">
               <button
                 type="button"
                 onClick={() => setShowDimensions((prev) => !prev)}
-                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition ${
+                className={`inline-flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-md text-[11px] sm:text-xs font-medium whitespace-nowrap transition ${
                   showDimensions
                     ? 'bg-sky-500/20 text-sky-300 border border-sky-500/40'
                     : 'text-slate-400 hover:bg-slate-800'
                 }`}
               >
                 <Ruler className="w-3.5 h-3.5" />
-                Cotas 3D
+                <span>Cotas</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setXrayMode((prev) => !prev)}
-                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition ${
+                className={`inline-flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-md text-[11px] sm:text-xs font-medium whitespace-nowrap transition ${
                   xrayMode
                     ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
                     : 'text-slate-400 hover:bg-slate-800'
                 }`}
               >
                 <Eye className="w-3.5 h-3.5" />
-                Rayos X / Estructura
+                <span>Rayos X</span>
               </button>
 
               {supportsOpenableFronts && (
                 <button
                   type="button"
                   onClick={() => setOpenFronts((prev) => !prev)}
-                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition ${
+                  className={`inline-flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-md text-[11px] sm:text-xs font-medium whitespace-nowrap transition ${
                     openFronts
                       ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
                       : 'text-slate-400 hover:bg-slate-800'
                   }`}
                 >
                   <DoorOpen className="w-3.5 h-3.5" />
-                  {openFronts ? 'Cerrar Puertas/Cajones' : 'Abrir Puertas/Cajones'}
+                  <span>{openFronts ? 'Cerrar' : 'Abrir Puertas'}</span>
                 </button>
               )}
 
               {/* Exploded View Slider */}
-              <div className="flex items-center gap-2 px-2.5 py-0.5 border-l border-slate-800">
-                <Layers className="w-3.5 h-3.5 text-slate-400" />
+              <div className="flex items-center gap-1.5 px-2 py-0.5 border-l border-slate-800">
+                <Layers className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                 <span className="text-[11px] text-slate-400 hidden sm:inline">
                   Explorar:
                 </span>
@@ -335,7 +363,7 @@ export function BlueprintStudio() {
                   step={0.05}
                   value={explosionFactor}
                   onChange={(e) => setExplosionFactor(parseFloat(e.target.value))}
-                  className="w-16 sm:w-20 accent-sky-500 h-1.5 bg-slate-800 rounded cursor-pointer"
+                  className="w-14 sm:w-20 accent-sky-500 h-1.5 bg-slate-800 rounded cursor-pointer"
                   title="Separar piezas en vista explotada 3D"
                 />
               </div>
@@ -357,7 +385,7 @@ export function BlueprintStudio() {
 
             {/* Selected 3D Part Inspector Card */}
             {selectedPart && (
-              <div className="absolute bottom-4 right-4 z-10 w-72 p-3.5 rounded-xl bg-slate-900/95 backdrop-blur border border-sky-500/50 shadow-2xl">
+              <div className="absolute bottom-3 right-3 left-3 sm:left-auto z-10 sm:w-72 p-3 rounded-xl bg-slate-900/95 backdrop-blur border border-sky-500/50 shadow-2xl">
                 <div className="flex items-center justify-between mb-1">
                   <span className="px-2 py-0.5 text-[10px] font-mono font-bold rounded bg-sky-500/20 text-sky-300">
                     {selectedPart.partCode}
@@ -373,7 +401,7 @@ export function BlueprintStudio() {
                 <div className="text-xs font-semibold text-white">
                   {selectedPart.name}
                 </div>
-                <div className="mt-1.5 text-xs font-mono text-emerald-400">
+                <div className="mt-1 text-xs font-mono text-emerald-400">
                   Corte: {selectedPart.cutDimensionsLabel}
                 </div>
                 <div className="mt-0.5 text-[11px] text-slate-400">
@@ -383,29 +411,31 @@ export function BlueprintStudio() {
             )}
 
             {/* Helper hint bottom-left */}
-            <div className="pointer-events-none absolute bottom-3 left-3 hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900/80 border border-slate-800 text-[11px] text-slate-400">
+            <div className="pointer-events-none absolute bottom-3 left-3 hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900/80 border border-slate-800 text-[11px] text-slate-400">
               <Maximize2 className="w-3.5 h-3.5 text-sky-400" />
               <span>
-                Arrastra para rotar 3D • Rueda para zoom • Haz clic en cualquier
-                pieza para ver su medida de corte
+                1 dedo / clic para rotar 3D • 2 dedos / rueda para zoom • Toca
+                cualquier pieza para ver su corte
               </span>
             </div>
           </div>
 
           {/* Bottom Technical Status & Engineering Bar */}
-          <footer className="border-t border-slate-800 bg-slate-900 px-4 py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
-            <div className="flex items-center gap-2">
+          <footer className="border-t border-slate-800 bg-slate-900 px-3 sm:px-4 py-2 flex items-center justify-between gap-2 text-[11px] sm:text-xs shrink-0">
+            <div className="flex items-center gap-2 min-w-0">
               <Box className="w-4 h-4 text-sky-400 shrink-0" />
-              <span className="font-semibold text-slate-200">
-                {blueprint.title}:
+              <span className="font-semibold text-slate-200 truncate">
+                {blueprint.title}
               </span>
-              <span className="text-slate-400 truncate">
-                {blueprint.subtitle}
+              <span className="text-slate-400 truncate hidden md:inline">
+                — {blueprint.subtitle}
               </span>
             </div>
-            <div className="flex items-center gap-4 text-[11px] text-slate-400 font-mono">
-              <span>Piezas 3D: {blueprint.parts.length}</span>
-              <span>Grupos de corte: {blueprint.cutList.length}</span>
+            <div className="flex items-center gap-3 text-[11px] text-slate-400 font-mono shrink-0">
+              <span>{blueprint.parts.length} pzas</span>
+              <span className="hidden sm:inline">
+                {blueprint.cutList.length} cortes
+              </span>
             </div>
           </footer>
         </main>
