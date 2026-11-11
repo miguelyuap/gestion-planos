@@ -7,6 +7,10 @@ export const StructureCategorySchema = z.enum([
   'closet',
   'door',
   'frame',
+  'stairs',
+  'bed',
+  'bookshelf',
+  'sliding_gate',
 ]);
 
 export type StructureCategory = z.infer<typeof StructureCategorySchema>;
@@ -100,6 +104,57 @@ export const FrameParamsSchema = z.object({
   materialFinish: MaterialFinishSchema,
 });
 
+export const StairsParamsSchema = z.object({
+  category: z.literal('stairs'),
+  widthCm: z.number().min(60).max(200),
+  totalRiseCm: z.number().min(100).max(450),
+  totalRunCm: z.number().min(120).max(550),
+  stepsCount: z.number().int().min(4).max(22),
+  treadThicknessMm: z.number().min(25).max(70),
+  stringerWidthCm: z.number().min(15).max(35),
+  includeRisers: z.boolean(),
+  includeHandrail: z.boolean(),
+  materialFinish: MaterialFinishSchema,
+});
+
+export const BedParamsSchema = z.object({
+  category: z.literal('bed'),
+  widthCm: z.number().min(90).max(220),
+  lengthCm: z.number().min(180).max(230),
+  baseHeightCm: z.number().min(25).max(55),
+  headboardHeightCm: z.number().min(60).max(160),
+  boardThicknessMm: z.number().min(15).max(36),
+  slatsCount: z.number().int().min(6).max(18),
+  underDrawersCount: z.number().int().min(0).max(4),
+  includeMattressGuide: z.boolean(),
+  materialFinish: MaterialFinishSchema,
+});
+
+export const BookshelfParamsSchema = z.object({
+  category: z.literal('bookshelf'),
+  widthCm: z.number().min(50).max(360),
+  heightCm: z.number().min(70).max(260),
+  depthCm: z.number().min(22).max(70),
+  shelvesCount: z.number().int().min(2).max(9),
+  verticalColumns: z.number().int().min(1).max(5),
+  boardThicknessMm: z.number().min(15).max(36),
+  includeBackPanel: z.boolean(),
+  includeBottomDoors: z.boolean(),
+  materialFinish: MaterialFinishSchema,
+});
+
+export const SlidingGateParamsSchema = z.object({
+  category: z.literal('sliding_gate'),
+  widthCm: z.number().min(150).max(600),
+  heightCm: z.number().min(120).max(300),
+  frameProfileMm: z.number().min(40).max(100),
+  picketSpacingCm: z.number().min(8).max(25),
+  bottomSheetHeightCm: z.number().min(0).max(110),
+  gateStyle: z.enum(['vertical_pickets', 'horizontal_louvers']),
+  includeGuideRail: z.boolean(),
+  materialFinish: MaterialFinishSchema,
+});
+
 export const BlueprintParamsSchema = z.discriminatedUnion('category', [
   RoofParamsSchema,
   TableParamsSchema,
@@ -107,6 +162,10 @@ export const BlueprintParamsSchema = z.discriminatedUnion('category', [
   ClosetParamsSchema,
   DoorParamsSchema,
   FrameParamsSchema,
+  StairsParamsSchema,
+  BedParamsSchema,
+  BookshelfParamsSchema,
+  SlidingGateParamsSchema,
 ]);
 
 export type RoofParams = z.infer<typeof RoofParamsSchema>;
@@ -115,6 +174,10 @@ export type KitchenCabinetParams = z.infer<typeof KitchenCabinetParamsSchema>;
 export type ClosetParams = z.infer<typeof ClosetParamsSchema>;
 export type DoorParams = z.infer<typeof DoorParamsSchema>;
 export type FrameParams = z.infer<typeof FrameParamsSchema>;
+export type StairsParams = z.infer<typeof StairsParamsSchema>;
+export type BedParams = z.infer<typeof BedParamsSchema>;
+export type BookshelfParams = z.infer<typeof BookshelfParamsSchema>;
+export type SlidingGateParams = z.infer<typeof SlidingGateParamsSchema>;
 export type BlueprintParams = z.infer<typeof BlueprintParamsSchema>;
 
 export type PartLayer =

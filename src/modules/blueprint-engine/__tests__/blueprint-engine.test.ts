@@ -1,10 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
+  DEFAULT_BED_PARAMS,
+  DEFAULT_BOOKSHELF_PARAMS,
   DEFAULT_CLOSET_PARAMS,
   DEFAULT_DOOR_PARAMS,
   DEFAULT_FRAME_PARAMS,
   DEFAULT_KITCHEN_PARAMS,
   DEFAULT_ROOF_PARAMS,
+  DEFAULT_SLIDING_GATE_PARAMS,
+  DEFAULT_STAIRS_PARAMS,
   DEFAULT_TABLE_PARAMS,
   generateBlueprint,
 } from '../index';
@@ -56,7 +60,50 @@ describe('Blueprint Engine & Natural Language Intent Parser', () => {
     }
   });
 
-  it('generates valid 3D parts, dimensions, and cutlists for all 6 structure categories', () => {
+  it('parses new categories: stairs, bed, bookshelf, and sliding_gate accurately', () => {
+    const stairsRes = parseRequirementIntent(
+      'voy a hacer una escalera de 110x280x340 cm con 16 peldaños'
+    );
+    expect(stairsRes.category).toBe('stairs');
+    if (stairsRes.params.category === 'stairs') {
+      expect(stairsRes.params.widthCm).toBe(110);
+      expect(stairsRes.params.totalRiseCm).toBe(280);
+      expect(stairsRes.params.totalRunCm).toBe(340);
+      expect(stairsRes.params.stepsCount).toBe(16);
+    }
+
+    const bedRes = parseRequirementIntent(
+      'quiero hacer una cama queen con 4 cajones'
+    );
+    expect(bedRes.category).toBe('bed');
+    if (bedRes.params.category === 'bed') {
+      expect(bedRes.params.widthCm).toBe(160);
+      expect(bedRes.params.lengthCm).toBe(200);
+      expect(bedRes.params.underDrawersCount).toBe(4);
+    }
+
+    const bookshelfRes = parseRequirementIntent(
+      'necesito una estantería librero de 150x200x35 cm de 3 columnas y 6 niveles'
+    );
+    expect(bookshelfRes.category).toBe('bookshelf');
+    if (bookshelfRes.params.category === 'bookshelf') {
+      expect(bookshelfRes.params.widthCm).toBe(150);
+      expect(bookshelfRes.params.verticalColumns).toBe(3);
+      expect(bookshelfRes.params.shelvesCount).toBe(6);
+    }
+
+    const gateRes = parseRequirementIntent(
+      'voy a hacer un portón corredizo de 350x220 cm con louvers horizontales'
+    );
+    expect(gateRes.category).toBe('sliding_gate');
+    if (gateRes.params.category === 'sliding_gate') {
+      expect(gateRes.params.widthCm).toBe(350);
+      expect(gateRes.params.heightCm).toBe(220);
+      expect(gateRes.params.gateStyle).toBe('horizontal_louvers');
+    }
+  });
+
+  it('generates valid 3D parts, dimensions, and cutlists for all 10 structure categories', () => {
     const allDefaults = [
       DEFAULT_ROOF_PARAMS,
       DEFAULT_TABLE_PARAMS,
@@ -64,6 +111,10 @@ describe('Blueprint Engine & Natural Language Intent Parser', () => {
       DEFAULT_CLOSET_PARAMS,
       DEFAULT_DOOR_PARAMS,
       DEFAULT_FRAME_PARAMS,
+      DEFAULT_STAIRS_PARAMS,
+      DEFAULT_BED_PARAMS,
+      DEFAULT_BOOKSHELF_PARAMS,
+      DEFAULT_SLIDING_GATE_PARAMS,
     ];
 
     for (const paramSet of allDefaults) {

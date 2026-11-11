@@ -1,23 +1,33 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import {
+  AlertTriangle,
   Archive,
+  BedDouble,
+  BookOpen,
   Box,
   Compass,
   DoorOpen,
   Eye,
+  Fence,
   FileSpreadsheet,
   Grid,
   Home,
   Layers,
+  LogOut,
   Maximize2,
   Ruler,
   SlidersHorizontal,
   Sparkles,
   Table2,
+  TrendingUp,
   Utensils,
 } from 'lucide-react';
+import { signOutAction } from '../auth/actions/auth.actions';
+import { buildPresetSession } from '../auth/services/auth.service';
+import type { AuthenticatedSession } from '../auth/types/auth.types';
 import {
   CATEGORY_METADATA,
   DEFAULT_PARAMS_BY_CATEGORY,
@@ -30,6 +40,10 @@ import type {
   Part3D,
   StructureCategory,
 } from '../blueprint-engine/types';
+import { LicenseBadge } from '../licensing/components/LicenseBadge';
+import { LicenseManagerModal } from '../licensing/components/LicenseManagerModal';
+import { buildLicenseStatusFromRecord } from '../licensing/services/license.service';
+import type { LicenseStatusResponse } from '../licensing/types/license.types';
 import {
   BlueprintCanvas,
   type CameraViewPreset,
@@ -44,9 +58,48 @@ const CATEGORY_ICONS: Record<StructureCategory, React.ReactNode> = {
   closet: <Archive className="w-4 h-4" />,
   door: <DoorOpen className="w-4 h-4" />,
   frame: <Grid className="w-4 h-4" />,
+  stairs: <TrendingUp className="w-4 h-4" />,
+  bed: <BedDouble className="w-4 h-4" />,
+  bookshelf: <BookOpen className="w-4 h-4" />,
+  sliding_gate: <Fence className="w-4 h-4" />,
 };
 
-export function BlueprintStudio() {
+export interface BlueprintStudioProps {
+  initialSession?: AuthenticatedSession;
+  initialLicense?: LicenseStatusResponse;
+}
+
+export function BlueprintStudio({
+  initialSession,
+  initialLicense,
+}: BlueprintStudioProps) {
+  const router = useRouter();
+  const [, startTransition] = useTransition();
+
+  const defaultSession = useMemo(
+    () => initialSession ?? buildPresetSession('active_pro'),
+    [initialSession]
+  );
+
+  const defaultLicense = useMemo(
+    () =>
+      initialLicense ??
+      buildLicenseStatusFromRecord({
+        tenantId: defaultSession.globalTenantId,
+        planCode: defaultSession.planCode,
+        isTrial: defaultSession.isTrial,
+        validFromIso: defaultSession.validFromIso,
+        validToIso: defaultSession.validToIso,
+        lastLicenseKey: defaultSession.lastLicenseKey,
+        activeHistory: defaultSession.activeHistory,
+      }),
+    [initialLicense, defaultSession]
+  );
+
+  const [licenseState, setLicenseState] =
+    useState<LicenseStatusResponse>(defaultLicense);
+  const [licenseModalOpen, setLicenseModalOpen] = useState<boolean>(false);
+
   const [promptText, setPromptText] = useState<string>(
     'Voy a hacer un techo a dos aguas de 6m de ancho por 5m de fondo y 2.6m de alto'
   );
@@ -91,13 +144,48 @@ export function BlueprintStudio() {
     setOpenFronts(false);
   };
 
+  const handleSignOut = () => {
+    startTransition(async () => {
+      await signOutAction();
+      router.push('/login');
+      router.refresh();
+    });
+  };
+
   const supportsOpenableFronts =
     params.category === 'kitchen_cabinet' ||
     params.category === 'closet' ||
-    params.category === 'door';
+    params.category === 'door' ||
+    params.category === 'bed' ||
+    params.category === 'bookshelf' ||
+    params.category === 'sliding_gate';
+
+  const isExpiringSoon =
+    licenseState.can_operate && licenseState.days_remaining <= 10;
 
   return (
     <div className="flex flex-col h-[100dvh] w-screen overflow-hidden bg-slate-950 text-slate-100">
+      {/* Preventative License Expiration Alert Banner */}
+      {isExpiringSoon && (
+        <div className="bg-amber-500/15 border-b border-amber-500/30 px-3 py-1.5 text-[11px] sm:text-xs text-amber-200 flex items-center justify-between gap-2 shrink-0">
+          <div className="flex items-center gap-2 truncate">
+            <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+            <span className="truncate">
+              <strong>Aviso de Suscripción:</strong> Quedan{' '}
+              <strong>{licenseState.days_remaining} días</strong> de vigencia en{' '}
+              {licenseState.current_plan.name}.
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setLicenseModalOpen(true)}
+            className="px-2 py-0.5 rounded bg-amber-400 text-slate-950 font-bold text-[11px] shrink-0 hover:bg-amber-300 transition"
+          >
+            Renovar ahora
+          </button>
+        </div>
+      )}
+
       {/* Top Header & Natural Language Requirement Bar */}
       <header className="border-b border-slate-800 bg-slate-900/95 backdrop-blur px-3 sm:px-4 py-2.5 sm:py-3 z-20 shrink-0">
         <div className="max-w-[1800px] mx-auto flex flex-col lg:flex-row lg:items-center gap-2.5 sm:gap-3">
@@ -116,14 +204,19 @@ export function BlueprintStudio() {
                     CAD
                   </span>
                 </div>
-                <p className="text-[10px] sm:text-[11px] text-slate-400 hidden sm:block">
-                  Generador de Planos 3D por Requerimiento y Medidas
+                <p className="text-[10px] sm:text-[11px] text-slate-400 hidden sm:block truncate max-w-[210px]">
+                  {defaultSession.tenantName}
                 </p>
               </div>
             </div>
 
             {/* Mobile & Tablet Quick Controls */}
             <div className="flex lg:hidden items-center gap-1.5">
+              <LicenseBadge
+                license={licenseState}
+                onClick={() => setLicenseModalOpen(true)}
+              />
+
               <button
                 type="button"
                 onClick={() => setMobilePanelOpen((prev) => !prev)}
@@ -134,7 +227,7 @@ export function BlueprintStudio() {
                 }`}
               >
                 <SlidersHorizontal className="w-3.5 h-3.5" />
-                {mobilePanelOpen ? 'Ver Plano 3D' : 'Medidas'}
+                {mobilePanelOpen ? '3D' : 'Medidas'}
               </button>
 
               <button
@@ -147,7 +240,15 @@ export function BlueprintStudio() {
                 "
               >
                 <FileSpreadsheet className="w-3.5 h-3.5" />
-                <span className="hidden xs:inline">Despiece</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleSignOut}
+                title="Cerrar sesión"
+                className="p-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 hover:text-rose-400"
+              >
+                <LogOut className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
@@ -163,7 +264,7 @@ export function BlueprintStudio() {
                 type="text"
                 value={promptText}
                 onChange={(e) => setPromptText(e.target.value)}
-                placeholder='Ej: "Voy a hacer un techo de 6x5m", "Closet de 200x220x60 cm"...'
+                placeholder='Ej: "Escalera de 100x270x320 cm", "Cama queen con 2 cajones", "Portón de 300x210 cm"...'
                 className="
                   w-full pl-8 sm:pl-9 pr-2.5 py-1.5 sm:py-2 text-xs sm:text-sm rounded-lg
                   bg-slate-950 border border-slate-700 text-slate-100
@@ -184,19 +285,34 @@ export function BlueprintStudio() {
             </button>
           </form>
 
-          {/* Desktop Cut-list / Technical Sheet Action */}
+          {/* Desktop License Badge, Cut-list Action & Logout */}
           <div className="hidden lg:flex items-center gap-2">
+            <LicenseBadge
+              license={licenseState}
+              onClick={() => setLicenseModalOpen(true)}
+            />
+
             <button
               type="button"
               onClick={() => setCutListModalOpen(true)}
               className="
-                inline-flex items-center gap-2 px-3.5 py-2 rounded-lg
+                inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg
                 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40
                 text-emerald-300 text-xs font-semibold transition
               "
             >
               <FileSpreadsheet className="w-4 h-4" />
-              Ver Despiece / Ficha Técnica ({blueprint.parts.length} pzas)
+              Despiece ({blueprint.parts.length} pzas)
+            </button>
+
+            <button
+              type="button"
+              onClick={handleSignOut}
+              title={`Cerrar sesión (${defaultSession.email})`}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-800/90 hover:bg-slate-800 border border-slate-700 text-xs text-slate-300 hover:text-rose-300 transition"
+            >
+              <LogOut className="w-3.5 h-3.5 text-rose-400" />
+              <span>Salir</span>
             </button>
           </div>
         </div>
@@ -204,7 +320,7 @@ export function BlueprintStudio() {
 
       {/* Main Workspace: Sidebar + 3D CAD Viewport */}
       <div className="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
-        {/* Left Control Panel (Collapsible Drawer on Mobile/Tablet, Fixed Sidebar on Desktop) */}
+        {/* Left Control Panel */}
         <aside
           className={`
             ${mobilePanelOpen ? 'flex' : 'hidden'} lg:flex
@@ -220,7 +336,7 @@ export function BlueprintStudio() {
                 1. Tipo de Estructura
               </span>
               <span className="text-[11px] text-sky-400 font-medium">
-                6 categorías
+                10 categorías
               </span>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 gap-1.5">
@@ -238,7 +354,9 @@ export function BlueprintStudio() {
                           : 'bg-slate-950/70 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
                       }`}
                     >
-                      <span className={active ? 'text-sky-400' : 'text-slate-500'}>
+                      <span
+                        className={active ? 'text-sky-400' : 'text-slate-500'}
+                      >
                         {CATEGORY_ICONS[catKey]}
                       </span>
                       <span className="truncate">
@@ -280,7 +398,7 @@ export function BlueprintStudio() {
 
         {/* Center/Right 3D Viewport Area */}
         <main className="flex-1 flex flex-col relative overflow-hidden bg-slate-950 min-h-[260px]">
-          {/* Viewport Floating Top Toolbar (Scrollable horizontally on small screens) */}
+          {/* Viewport Floating Top Toolbar */}
           <div className="absolute top-2.5 left-2.5 right-2.5 z-10 flex flex-wrap items-center justify-between gap-1.5 pointer-events-none">
             {/* Camera View Presets */}
             <div className="pointer-events-auto flex items-center gap-1 p-1 rounded-lg bg-slate-900/90 backdrop-blur border border-slate-800 shadow-lg max-w-full overflow-x-auto">
@@ -362,7 +480,9 @@ export function BlueprintStudio() {
                   max={1}
                   step={0.05}
                   value={explosionFactor}
-                  onChange={(e) => setExplosionFactor(parseFloat(e.target.value))}
+                  onChange={(e) =>
+                    setExplosionFactor(parseFloat(e.target.value))
+                  }
                   className="w-14 sm:w-20 accent-sky-500 h-1.5 bg-slate-800 rounded cursor-pointer"
                   title="Separar piezas en vista explotada 3D"
                 />
@@ -446,6 +566,18 @@ export function BlueprintStudio() {
         blueprint={blueprint}
         open={cutListModalOpen}
         onClose={() => setCutListModalOpen(false)}
+        tenantName={defaultSession.tenantName}
+        nitOrTaxId={defaultSession.nitOrTaxId}
+        planName={licenseState.current_plan.name}
+      />
+
+      {/* License & Subscription Manager Modal */}
+      <LicenseManagerModal
+        open={licenseModalOpen}
+        onClose={() => setLicenseModalOpen(false)}
+        session={defaultSession}
+        license={licenseState}
+        onLicenseUpdated={setLicenseState}
       />
     </div>
   );

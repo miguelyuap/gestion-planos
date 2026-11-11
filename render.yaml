@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: gst-planos-3d
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: NODE_VERSION
+        value: 20.18.0
+      - key: NEXT_PUBLIC_APP_ID
+        value: app_gestion_planos
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        value: https://lypjuiwlmxunuxjhivct.supabase.co
+      - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
+        value: sb_publishable_r0_WhlC90ri32YF60UPlkg_5H0jmUqs
+      - key: LICENSE_SERVICE_URL
+        sync: false
+      - key: LICENSE_SERVICE_API_KEY
+        sync: false

@@ -589,6 +589,399 @@ export function ParameterForm({ params, onChange }: ParameterFormProps) {
         </>
       )}
 
+      {params.category === 'stairs' && (
+        <>
+          <NumberField
+            label="Ancho Útil de Escalera"
+            unit="cm"
+            value={params.widthCm}
+            min={65}
+            max={180}
+            step={5}
+            onChange={(widthCm) => onChange({ ...params, widthCm })}
+          />
+          <NumberField
+            label="Altura Piso a Piso (Desnivel)"
+            unit="cm"
+            value={params.totalRiseCm}
+            min={120}
+            max={420}
+            step={5}
+            onChange={(totalRiseCm) => onChange({ ...params, totalRiseCm })}
+          />
+          <NumberField
+            label="Desarrollo Horizontal (Largo)"
+            unit="cm"
+            value={params.totalRunCm}
+            min={140}
+            max={500}
+            step={5}
+            onChange={(totalRunCm) => onChange({ ...params, totalRunCm })}
+          />
+          <NumberField
+            label="Cantidad de Peldaños / Pasos"
+            unit="ud"
+            value={params.stepsCount}
+            min={5}
+            max={20}
+            step={1}
+            onChange={(stepsCount) =>
+              onChange({ ...params, stepsCount: Math.round(stepsCount) })
+            }
+          />
+          <NumberField
+            label="Espesor de Huella / Peldaño"
+            unit="mm"
+            value={params.treadThicknessMm}
+            min={25}
+            max={65}
+            step={1}
+            onChange={(treadThicknessMm) =>
+              onChange({ ...params, treadThicknessMm })
+            }
+          />
+          <NumberField
+            label="Ancho de Zanca Lateral"
+            unit="cm"
+            value={params.stringerWidthCm}
+            min={16}
+            max={32}
+            step={1}
+            onChange={(stringerWidthCm) =>
+              onChange({ ...params, stringerWidthCm })
+            }
+          />
+          <label className="flex items-center justify-between pt-1 cursor-pointer">
+            <span className="text-xs font-medium text-slate-300">
+              Incluir Contrahuellas Cerradas
+            </span>
+            <input
+              type="checkbox"
+              checked={params.includeRisers}
+              onChange={(e) =>
+                onChange({ ...params, includeRisers: e.target.checked })
+              }
+              className="w-4 h-4 accent-sky-500 rounded"
+            />
+          </label>
+          <label className="flex items-center justify-between pt-1 cursor-pointer">
+            <span className="text-xs font-medium text-slate-300">
+              Incluir Baranda y Pasamanos
+            </span>
+            <input
+              type="checkbox"
+              checked={params.includeHandrail}
+              onChange={(e) =>
+                onChange({ ...params, includeHandrail: e.target.checked })
+              }
+              className="w-4 h-4 accent-sky-500 rounded"
+            />
+          </label>
+        </>
+      )}
+
+      {params.category === 'bed' && (
+        <>
+          <div className="space-y-1.5">
+            <label className="block text-xs font-medium text-slate-300">
+              Medida Estándar Rápida
+            </label>
+            <div className="grid grid-cols-4 gap-1">
+              {(
+                [
+                  ['Sencilla', 100, 190],
+                  ['Doble', 140, 190],
+                  ['Queen', 160, 200],
+                  ['King', 200, 200],
+                ] as const
+              ).map(([label, w, l]) => (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() =>
+                    onChange({ ...params, widthCm: w, lengthCm: l })
+                  }
+                  className={`px-2 py-1.5 rounded-md text-[11px] font-medium border transition ${
+                    params.widthCm === w
+                      ? 'bg-sky-500/20 border-sky-400 text-sky-300'
+                      : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <NumberField
+            label="Ancho Total de la Cama"
+            unit="cm"
+            value={params.widthCm}
+            min={90}
+            max={210}
+            step={5}
+            onChange={(widthCm) => onChange({ ...params, widthCm })}
+          />
+          <NumberField
+            label="Largo Total"
+            unit="cm"
+            value={params.lengthCm}
+            min={185}
+            max={220}
+            step={5}
+            onChange={(lengthCm) => onChange({ ...params, lengthCm })}
+          />
+          <NumberField
+            label="Altura del Cabecero"
+            unit="cm"
+            value={params.headboardHeightCm}
+            min={70}
+            max={150}
+            step={5}
+            onChange={(headboardHeightCm) =>
+              onChange({ ...params, headboardHeightCm })
+            }
+          />
+          <NumberField
+            label="Altura de Base / Largueros"
+            unit="cm"
+            value={params.baseHeightCm}
+            min={26}
+            max={50}
+            step={2}
+            onChange={(baseHeightCm) => onChange({ ...params, baseHeightCm })}
+          />
+          <NumberField
+            label="Tablas del Tendido / Somier"
+            unit="ud"
+            value={params.slatsCount}
+            min={6}
+            max={16}
+            step={1}
+            onChange={(slatsCount) =>
+              onChange({ ...params, slatsCount: Math.round(slatsCount) })
+            }
+          />
+          <NumberField
+            label="Cajones Inferiores Extraíbles"
+            unit="ud"
+            value={params.underDrawersCount}
+            min={0}
+            max={4}
+            step={1}
+            onChange={(underDrawersCount) =>
+              onChange({
+                ...params,
+                underDrawersCount: Math.round(underDrawersCount),
+              })
+            }
+          />
+          <label className="flex items-center justify-between pt-1 cursor-pointer">
+            <span className="text-xs font-medium text-slate-300">
+              Mostrar Colchón Guía de Referencia
+            </span>
+            <input
+              type="checkbox"
+              checked={params.includeMattressGuide}
+              onChange={(e) =>
+                onChange({ ...params, includeMattressGuide: e.target.checked })
+              }
+              className="w-4 h-4 accent-sky-500 rounded"
+            />
+          </label>
+        </>
+      )}
+
+      {params.category === 'bookshelf' && (
+        <>
+          <NumberField
+            label="Ancho Total de Estantería"
+            unit="cm"
+            value={params.widthCm}
+            min={55}
+            max={320}
+            step={5}
+            onChange={(widthCm) => onChange({ ...params, widthCm })}
+          />
+          <NumberField
+            label="Altura Total"
+            unit="cm"
+            value={params.heightCm}
+            min={80}
+            max={250}
+            step={5}
+            onChange={(heightCm) => onChange({ ...params, heightCm })}
+          />
+          <NumberField
+            label="Profundidad / Fondo"
+            unit="cm"
+            value={params.depthCm}
+            min={24}
+            max={60}
+            step={2}
+            onChange={(depthCm) => onChange({ ...params, depthCm })}
+          />
+          <NumberField
+            label="Columnas / Cuerpos Verticales"
+            unit="col"
+            value={params.verticalColumns}
+            min={1}
+            max={5}
+            step={1}
+            onChange={(verticalColumns) =>
+              onChange({
+                ...params,
+                verticalColumns: Math.round(verticalColumns),
+              })
+            }
+          />
+          <NumberField
+            label="Niveles de Repisas Horizontales"
+            unit="ud"
+            value={params.shelvesCount}
+            min={2}
+            max={8}
+            step={1}
+            onChange={(shelvesCount) =>
+              onChange({ ...params, shelvesCount: Math.round(shelvesCount) })
+            }
+          />
+          <NumberField
+            label="Espesor de Tablero"
+            unit="mm"
+            value={params.boardThicknessMm}
+            min={15}
+            max={30}
+            step={1}
+            onChange={(boardThicknessMm) =>
+              onChange({ ...params, boardThicknessMm })
+            }
+          />
+          <label className="flex items-center justify-between pt-1 cursor-pointer">
+            <span className="text-xs font-medium text-slate-300">
+              Incluir Fondo / Respaldo Trasero
+            </span>
+            <input
+              type="checkbox"
+              checked={params.includeBackPanel}
+              onChange={(e) =>
+                onChange({ ...params, includeBackPanel: e.target.checked })
+              }
+              className="w-4 h-4 accent-sky-500 rounded"
+            />
+          </label>
+          <label className="flex items-center justify-between pt-1 cursor-pointer">
+            <span className="text-xs font-medium text-slate-300">
+              Incluir Puertas Bajas en Primer Nivel
+            </span>
+            <input
+              type="checkbox"
+              checked={params.includeBottomDoors}
+              onChange={(e) =>
+                onChange({ ...params, includeBottomDoors: e.target.checked })
+              }
+              className="w-4 h-4 accent-sky-500 rounded"
+            />
+          </label>
+        </>
+      )}
+
+      {params.category === 'sliding_gate' && (
+        <>
+          <div className="space-y-1.5">
+            <label className="block text-xs font-medium text-slate-300">
+              Diseño de Relleno Metálico
+            </label>
+            <div className="grid grid-cols-2 gap-1.5">
+              {(
+                [
+                  ['vertical_pickets', 'Barrotes Verticales'],
+                  ['horizontal_louvers', 'Louvers Horizontales'],
+                ] as const
+              ).map(([style, label]) => (
+                <button
+                  key={style}
+                  type="button"
+                  onClick={() => onChange({ ...params, gateStyle: style })}
+                  className={`px-2.5 py-1.5 rounded-md text-xs font-medium border transition ${
+                    params.gateStyle === style
+                      ? 'bg-sky-500/20 border-sky-400 text-sky-300'
+                      : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <NumberField
+            label="Ancho del Portón / Vano"
+            unit="cm"
+            value={params.widthCm}
+            min={180}
+            max={550}
+            step={10}
+            onChange={(widthCm) => onChange({ ...params, widthCm })}
+          />
+          <NumberField
+            label="Altura Total del Portón"
+            unit="cm"
+            value={params.heightCm}
+            min={140}
+            max={280}
+            step={5}
+            onChange={(heightCm) => onChange({ ...params, heightCm })}
+          />
+          <NumberField
+            label="Perfil Tubular del Bastidor"
+            unit="mm"
+            value={params.frameProfileMm}
+            min={40}
+            max={100}
+            step={5}
+            onChange={(frameProfileMm) =>
+              onChange({ ...params, frameProfileMm })
+            }
+          />
+          <NumberField
+            label="Separación entre Barrotes / Perfiles"
+            unit="cm"
+            value={params.picketSpacingCm}
+            min={9}
+            max={22}
+            step={1}
+            onChange={(picketSpacingCm) =>
+              onChange({ ...params, picketSpacingCm })
+            }
+          />
+          <NumberField
+            label="Altura de Zócalo Ciego Inferior"
+            unit="cm"
+            value={params.bottomSheetHeightCm}
+            min={0}
+            max={100}
+            step={5}
+            onChange={(bottomSheetHeightCm) =>
+              onChange({ ...params, bottomSheetHeightCm })
+            }
+          />
+          <label className="flex items-center justify-between pt-1 cursor-pointer">
+            <span className="text-xs font-medium text-slate-300">
+              Incluir Riel de Piso y Columnas Guía
+            </span>
+            <input
+              type="checkbox"
+              checked={params.includeGuideRail}
+              onChange={(e) =>
+                onChange({ ...params, includeGuideRail: e.target.checked })
+              }
+              className="w-4 h-4 accent-sky-500 rounded"
+            />
+          </label>
+        </>
+      )}
+
       {/* Material selector */}
       <div className="pt-2 border-t border-slate-800 space-y-1.5">
         <label className="block text-xs font-medium text-slate-300">

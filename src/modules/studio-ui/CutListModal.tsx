@@ -1,19 +1,32 @@
 'use client';
 
 import React from 'react';
-import { FileSpreadsheet, Printer, X } from 'lucide-react';
+import { Building2, FileSpreadsheet, Printer, X } from 'lucide-react';
 import type { GeneratedBlueprint } from '../blueprint-engine/types';
 
 export interface CutListModalProps {
   blueprint: GeneratedBlueprint;
   open: boolean;
   onClose: () => void;
+  tenantName?: string;
+  nitOrTaxId?: string;
+  planName?: string;
 }
 
-export function CutListModal({ blueprint, open, onClose }: CutListModalProps) {
+export function CutListModal({
+  blueprint,
+  open,
+  onClose,
+  tenantName,
+  nitOrTaxId,
+  planName,
+}: CutListModalProps) {
   if (!open) return null;
 
-  const totalPieces = blueprint.cutList.reduce((acc, item) => acc + item.quantity, 0);
+  const totalPieces = blueprint.cutList.reduce(
+    (acc, item) => acc + item.quantity,
+    0
+  );
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
@@ -25,9 +38,16 @@ export function CutListModal({ blueprint, open, onClose }: CutListModalProps) {
               <FileSpreadsheet className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-slate-100">
-                Ficha Técnica y Despiece de Materiales (BOM)
-              </h2>
+              <div className="flex items-center gap-2">
+                <h2 className="text-base font-bold text-slate-100">
+                  Ficha Técnica y Despiece de Materiales (BOM)
+                </h2>
+                {planName && (
+                  <span className="px-2 py-0.5 text-[10px] font-mono rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                    {planName}
+                  </span>
+                )}
+              </div>
               <p className="text-xs text-slate-400">{blueprint.subtitle}</p>
             </div>
           </div>
@@ -57,6 +77,24 @@ export function CutListModal({ blueprint, open, onClose }: CutListModalProps) {
 
         {/* Body */}
         <div className="p-6 overflow-y-auto space-y-6">
+          {/* Corporate Tenant Header */}
+          {tenantName && (
+            <div className="p-3.5 rounded-lg bg-slate-950/90 border border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs">
+              <div className="flex items-center gap-2">
+                <Building2 className="w-4 h-4 text-sky-400" />
+                <span className="font-bold text-white">{tenantName}</span>
+                {nitOrTaxId && (
+                  <span className="text-slate-400 font-mono">
+                    • NIT {nitOrTaxId}
+                  </span>
+                )}
+              </div>
+              <span className="text-[11px] text-slate-400">
+                Documento técnico emitido con licencia oficial GST-SOFTWARE
+              </span>
+            </div>
+          )}
+
           {/* Summary metrics */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {blueprint.dimensions.map((d) => (

@@ -1,9 +1,13 @@
 import {
+  DEFAULT_BED_PARAMS,
+  DEFAULT_BOOKSHELF_PARAMS,
   DEFAULT_CLOSET_PARAMS,
   DEFAULT_DOOR_PARAMS,
   DEFAULT_FRAME_PARAMS,
   DEFAULT_KITCHEN_PARAMS,
   DEFAULT_ROOF_PARAMS,
+  DEFAULT_SLIDING_GATE_PARAMS,
+  DEFAULT_STAIRS_PARAMS,
   DEFAULT_TABLE_PARAMS,
 } from './index';
 import type { BlueprintParams, StructureCategory } from './types';
@@ -94,10 +98,22 @@ export function parseRequirementIntent(rawPrompt: string): ParsedIntentResult {
   const text = rawPrompt.trim().toLowerCase();
   const detectedKeywords: string[] = [];
 
-  // 1. Detect category
+  // 1. Detect category across all 10 parametric engines
   let category: StructureCategory = 'roof';
 
-  if (/(closet|clóset|armario|ropero|vestier|guardarropa)/i.test(text)) {
+  if (/(escalera|escaleras|peldaños|peldanos|gradas|zanca)/i.test(text)) {
+    category = 'stairs';
+    detectedKeywords.push('Escalera Estructural');
+  } else if (/(cama|base de cama|base cama|somier|cabecero)/i.test(text)) {
+    category = 'bed';
+    detectedKeywords.push('Cama / Base');
+  } else if (/(estanteria|estantería|librero|biblioteca|repisero|estante|rack)/i.test(text)) {
+    category = 'bookshelf';
+    detectedKeywords.push('Estantería / Librero');
+  } else if (/(portón|porton|reja|verja|corredizo|corrediza)/i.test(text)) {
+    category = 'sliding_gate';
+    detectedKeywords.push('Portón / Reja');
+  } else if (/(closet|clóset|armario|ropero|vestier|guardarropa)/i.test(text)) {
     category = 'closet';
     detectedKeywords.push('Closet / Armario');
   } else if (/(cocina|alacena|gabinete|mueble bajo|meson|mesón|encimera)/i.test(text)) {
@@ -106,10 +122,10 @@ export function parseRequirementIntent(rawPrompt: string): ParsedIntentResult {
   } else if (/(mesa|escritorio|comedor|mesón de trabajo|isla)/i.test(text)) {
     category = 'table';
     detectedKeywords.push('Mesa / Escritorio');
-  } else if (/(puerta|hoja de puerta|portón|porton)/i.test(text)) {
+  } else if (/(puerta|hoja de puerta)/i.test(text)) {
     category = 'door';
     detectedKeywords.push('Puerta con Marco');
-  } else if (/(marco|bastidor|ventana|cerramiento|estructura rectangular|reja)/i.test(text)) {
+  } else if (/(marco|bastidor|ventana|cerramiento|estructura rectangular)/i.test(text)) {
     category = 'frame';
     detectedKeywords.push('Marco / Bastidor');
   } else if (/(techo|cubierta|tejado|pergola|pérgola|galpón|galpon|ramada|marquesina)/i.test(text)) {
@@ -275,6 +291,128 @@ export function parseRequirementIntent(rawPrompt: string): ParsedIntentResult {
       params,
       detectedKeywords,
       interpretationSummary: `Puerta con marco para vano de ${params.openingWidthCm} × ${params.openingHeightCm} cm.`,
+    };
+  }
+
+  if (category === 'stairs') {
+    const params = { ...DEFAULT_STAIRS_PARAMS };
+
+    if (dims.length >= 1) {
+      params.widthCm = Math.min(200, Math.max(60, normalizeDimensionToCm(dims[0].value, dims[0].unit)));
+    }
+    if (dims.length >= 2) {
+      params.totalRiseCm = Math.min(450, Math.max(100, normalizeDimensionToCm(dims[1].value, dims[1].unit)));
+    }
+    if (dims.length >= 3) {
+      params.totalRunCm = Math.min(550, Math.max(120, normalizeDimensionToCm(dims[2].value, dims[2].unit)));
+    }
+
+    const stepsMatch = text.match(/(\d+)\s*(?:peldaños|peldanos|pasos|escalones|gradas)/i);
+    if (stepsMatch) {
+      params.stepsCount = Math.min(22, Math.max(4, parseInt(stepsMatch[1], 10)));
+    }
+    if (/(contrahuella|cerrada)/i.test(text)) {
+      params.includeRisers = true;
+    }
+    if (/(sin baranda|sin pasamanos)/i.test(text)) {
+      params.includeHandrail = false;
+    }
+
+    return {
+      category,
+      params,
+      detectedKeywords,
+      interpretationSummary: `Escalera de ${params.widthCm} cm de ancho, ${params.totalRiseCm} cm de altura y ${params.totalRunCm} cm de desarrollo (${params.stepsCount} peldaños).`,
+    };
+  }
+
+  if (category === 'bed') {
+    const params = { ...DEFAULT_BED_PARAMS };
+
+    if (/(sencilla|individual|twin)/i.test(text)) {
+      params.widthCm = 100;
+      params.lengthCm = 190;
+    } else if (/(doble|full|matrimonial)/i.test(text)) {
+      params.widthCm = 140;
+      params.lengthCm = 190;
+    } else if (/(queen)/i.test(text)) {
+      params.widthCm = 160;
+      params.lengthCm = 200;
+    } else if (/(king)/i.test(text)) {
+      params.widthCm = 200;
+      params.lengthCm = 200;
+    }
+
+    if (dims.length >= 2) {
+      params.widthCm = Math.min(220, Math.max(90, normalizeDimensionToCm(dims[0].value, dims[0].unit)));
+      params.lengthCm = Math.min(230, Math.max(180, normalizeDimensionToCm(dims[1].value, dims[1].unit)));
+    }
+    if (dims.length >= 3) {
+      params.headboardHeightCm = Math.min(160, Math.max(60, normalizeDimensionToCm(dims[2].value, dims[2].unit)));
+    }
+
+    const drawersMatch = text.match(/(\d+)\s*(?:cajones|cajón|gavetas)/i);
+    if (drawersMatch) {
+      params.underDrawersCount = Math.min(4, Math.max(0, parseInt(drawersMatch[1], 10)));
+    }
+
+    return {
+      category,
+      params,
+      detectedKeywords,
+      interpretationSummary: `Cama de ${params.widthCm} × ${params.lengthCm} cm con cabecero de ${params.headboardHeightCm} cm y ${params.underDrawersCount} cajones inferiores.`,
+    };
+  }
+
+  if (category === 'bookshelf') {
+    const params = { ...DEFAULT_BOOKSHELF_PARAMS };
+
+    if (dims.length >= 2) {
+      params.widthCm = Math.min(360, Math.max(50, normalizeDimensionToCm(dims[0].value, dims[0].unit)));
+      params.heightCm = Math.min(260, Math.max(70, normalizeDimensionToCm(dims[1].value, dims[1].unit)));
+    }
+    if (dims.length >= 3) {
+      params.depthCm = Math.min(70, Math.max(22, normalizeDimensionToCm(dims[2].value, dims[2].unit)));
+    }
+
+    const colsMatch = text.match(/(\d+)\s*(?:columnas|cuerpos|divisiones|modulos|módulos)/i);
+    if (colsMatch) {
+      params.verticalColumns = Math.min(5, Math.max(1, parseInt(colsMatch[1], 10)));
+    }
+    const shelvesMatch = text.match(/(\d+)\s*(?:niveles|repisas|entrepaños|estantes)/i);
+    if (shelvesMatch) {
+      params.shelvesCount = Math.min(9, Math.max(2, parseInt(shelvesMatch[1], 10)));
+    }
+    if (/(puertas|puerta)/i.test(text)) {
+      params.includeBottomDoors = true;
+    }
+
+    return {
+      category,
+      params,
+      detectedKeywords,
+      interpretationSummary: `Estantería / Librero de ${params.widthCm} × ${params.heightCm} × ${params.depthCm} cm (${params.verticalColumns} columnas × ${params.shelvesCount} niveles).`,
+    };
+  }
+
+  if (category === 'sliding_gate') {
+    const params = { ...DEFAULT_SLIDING_GATE_PARAMS };
+
+    if (dims.length >= 2) {
+      params.widthCm = Math.min(600, Math.max(150, normalizeDimensionToCm(dims[0].value, dims[0].unit)));
+      params.heightCm = Math.min(300, Math.max(120, normalizeDimensionToCm(dims[1].value, dims[1].unit)));
+    }
+    if (/(horizontal|horizontales|louver|entablonado)/i.test(text)) {
+      params.gateStyle = 'horizontal_louvers';
+    } else if (/(barrote|barrotes|vertical|verticales)/i.test(text)) {
+      params.gateStyle = 'vertical_pickets';
+    }
+
+    return {
+      category,
+      params,
+      detectedKeywords,
+      interpretationSummary: `Portón Corredizo / Reja de ${params.widthCm} × ${params.heightCm} cm (${params.gateStyle === 'vertical_pickets' ? 'Barrotes verticales' : 'Louvers horizontales'}).`,
     };
   }
 
